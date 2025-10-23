@@ -73,3 +73,52 @@ Rendering commands go between input processing and polling/graphics updates. Col
 - `alpha`: the transparency channel of RGB-A, set to floats (not hexidecimal) from `0.0f` to `1.0f`
 
 I've added a small function that randomly increases / decreases RGB values to display constantly updating colors.
+
+# Hello Triangle
+Everything in OpenGL is done in 3D space, but must be "flattened" to display on the 2D screen. This is managed by the **Graphics Pipeline** of OpenGL to make 3D coordinates into colored 2D pixels. Each little program running on your graphics card is called a **shader**, these can be modified from their original state by writing a `.GLSL` file (OpenGL Shading Language).
+
+![Render Pipeline](./assets/README/pipeline.png)
+
+In OpenGL we must define at *least* a vertex and a fragment shader since they are not included on GPU firmware
+
+## Vertex Input
+Before we can draw anything, we need to define vertex data. This is stored in a **flat array** and not a nested array for GPU efficiency. Coordinates follow the format:
+```cpp
+float vertices[] = {
+    x1, y1, z1,
+    x2, y2, z2,//...
+    xN, yN, zN
+}
+```
+They are also normalized to fall under `[-1.0f, 1.0f]` and are later transformed into screen coordinates through the viewport.
+
+## Initializing Buffers
+The data stored is managed with a **vertex buffer object** or **VBO**. This is an OpenGL object, so it has an index, we can generate it using `glGenBuffers()` with the following arguments:
+- `size`: amount of ID's to generate `GLsizei` (`1` for this build since we only have one vertex buffer)
+- `buffers`: the buffers you want to generate indeces for in `GLuint*` (`&VBO` for this build [our vertex buffer])
+
+## Binding Buffers
+Binding buffers is done in the `glBindBuffer()` function, passing in:
+- `target`: the target array to spit out to (`GL_ARRAY_BUFFER` for this build)
+- `buffer`: the buffer to pass into the array (`VBO` for this build)
+
+## Copying Data
+To copy data to buffers, you call `glBufferData()` and pass in the data you want to send. Here are the arguments and what we used for this build:
+- `mode`: specifies the target buffer to send data to (`GL_ARRAY_BUFFER` for this build)
+- `size`: specifies the size of data to send in bytes (`sizeof(vertices)` for this build to get however many vertices we have listed)
+- `data`: pointer to data to write (`vertices` for this build)
+- `usage`: usage mode, with the most common being `GL_STATIC_DRAW`, `GL_DYNAMIC_DRAW`, & `GL_STREAM_DRAW` (`GL_STATIC_DRAW` for this build to draw once and be done)
+
+## Shaders
+Similarly programmed to C, we need a vertex shader and a fragment shader.
+
+### Vertex Shaders
+For a vertex shader, we need to be able to take in coordinates from a `vec3` (for 3-space coordinates shown in our `vertices[]`) and output a `vec4` (not 4-space, the 4th var in the vector is **perspective division** [covered in later chapters]). We *can* write shaders in our `main.cpp`, but why not load them from a `.GLSL` file? The vertex shader given by [LearnOpenGL](https://learnopengl.com/Getting-started/Hello-Triangle) is stored in `shaders/vertexShaderSource.GLSL`.
+
+### Compiling Shaders
+Using the `glCreateShader()` function to pass in the type of shader (i.e. `GL_VERTEX_SHADER`). Then call `glShaderSource()` with the arguments:
+- `shader`: the shader to be replaced with the sourcecode (`vertexShader` for our vertex shader)
+- `count`: the number of elements in the string array (for having more than one source compiled into one shader, `1` for this build)
+- `string`: the source of the shader (`&vectorShaderSource` for our vector shader)
+- `length`: an optional argument for specifying length of string elements (`nullptr` for this build)
+Then we call `glCompileShader()` passing in the shader we want to compile.

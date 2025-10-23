@@ -1,18 +1,39 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
 #include <iostream>
-#include <vector>
-#include <cmath>
+#include <fstream>
+#include <sstream>
+
 #include <random>
+#include <cmath>
+
+#include <vector>
+#include <string>
 
 // globals
-float r = 0.0f;
-float g = 0.0f;
-float b = 0.0f;
+// color vars
+float r = 0.5f;
+float g = 0.5f;
+float b = 0.5f;
 
+// vertexes
+float vertices[] {
+    -0.5f, -0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f,
+    0.5f, 0.5f, 0.0f
+};
+
+// shaders
+const char* shaderPaths[] {
+    "shaders/vertexShaderSource.GLSL"
+};
+
+// rand utils
 std::minstd_rand rng(std::random_device{}());
 std::uniform_real_distribution<float> floatDist(-0.01f, 0.01f);
 
+// functions
 // callbacks
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
@@ -26,6 +47,25 @@ void processInput(GLFWwindow *window) {
         // close window
         glfwSetWindowShouldClose(window, true);
     }
+}
+
+// read a file and output its constants as a c-style string
+const char* readToChar(const char* path) {
+    static std::string source;
+    std::ifstream file(path);
+
+    if(!file.is_open()) {
+        std::cerr << "Failed to open file: " << path << std::endl;
+        return nullptr;
+    }
+
+    // read via stringbuffer
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    source = buffer.str();
+
+    // return as a c-style string (const char*)
+    return source.c_str();
 }
 
 // rendering functions
@@ -97,6 +137,19 @@ int main() {
         return -1;
     }
 
+    // load shader files
+    const char *vertexShaderSource = readToChar(shaderPaths[0]);
+
+    // create shaders
+    unsigned int vertexShader;
+    vertexShader = glCreateShader(GL_VERTEX_SHADER);
+
+    // source shaders
+    glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
+
+    // compile shaders
+    glCompileShader(vertexShader);
+
     // render a viewport
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
@@ -106,10 +159,10 @@ int main() {
         processInput(window);
 
         // rendering
-        std::vector<float> rgb = cycleColors(r, g, b);
+        /*std::vector<float> rgb = cycleColors(r, g, b);
         r = rgb[0];
         g = rgb[1];
-        b = rgb[2];
+        b = rgb[2];*/
 
         glClearColor(r, g, b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
