@@ -122,3 +122,15 @@ Using the `glCreateShader()` function to pass in the type of shader (i.e. `GL_VE
 - `string`: the source of the shader (`&vectorShaderSource` for our vector shader)
 - `length`: an optional argument for specifying length of string elements (`nullptr` for this build)
 Then we call `glCompileShader()` passing in the shader we want to compile.
+
+The compilation of the shader is checked with `glGetShaderiv()` pasing in the following parameters:
+- `shader`: the shader you want to recieve information from (for example `vertexShader`)
+- `pname`: the piece of information you want to recieve from the shader (`GL_COMPILE_STATUS` for this instance)
+- `params`: the `int` to return data to (`vertexSuccess` for this build)
+Then we use `glGetShaderInfoLog()` passing in our shader, the size of a char array, `nullptr` for the length of our log, and our char array `infoLog`
+
+### Fragment Shaders
+Works the same way as vertex shaders, with some different `.GLSL` code. Specifically utilizing the `out` keyword to output a variable in `vec4`.
+
+### Shader Programs
+A shader program object is used to combine all our shaders, we can then activate that and issue render calls to it. we call the `glCreateProgram()` function. Then we can use the `glAttachShader()` function, passing in our program and our shader (one at a time). Then we use `glLinkProgram()` passing in our program. To use the program, we call `glUseProgram()` passing in our program, then delete the shader objects with `glDeleteShader()` passing in each shader one at a time.
