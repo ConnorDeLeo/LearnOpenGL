@@ -5,7 +5,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <random>
 #include <cmath>
 
 #include <vector>
@@ -19,9 +18,9 @@ float b = 0.5f;
 
 // vertexes
 float vertices[] {
-    -0.5f, -0.5f, 0.0f,
-    0.5f, -0.5f, 0.0f,
-    0.5f, 0.5f, 0.0f
+    -0.5f, 0.0f, 0.0f,
+    0.0f, 0.5f, 0.0f,
+    0.5f, 0.0f, 0.0f
 };
 
 // shaders
@@ -29,10 +28,6 @@ const char* shaderPaths[] {
     "shaders/vertexShaderSource.GLSL",
     "shaders/fragmentShaderSource.GLSL"
 };
-
-// rand utils
-std::minstd_rand rng(std::random_device{}());
-std::uniform_real_distribution<float> floatDist(-0.01f, 0.01f);
 
 // functions
 // callbacks
@@ -64,42 +59,6 @@ std::string readFile(const char* path) {
     std::stringstream buffer;
     buffer << file.rdbuf();
     return buffer.str();
-}
-
-// rendering functions
-std::vector<float> cycleColors(float r, float g, float b) {
-    std::vector<float> rgb;
-
-    r += floatDist(rng);
-    g += floatDist(rng);
-    b += floatDist(rng);
-
-    if(r >= 1.0f) {
-        r = 1.0f;
-    }
-    else if(r <= 0.0f) {
-        r = 0.0f;
-    }
-
-    if(g >= 1.0f) {
-        g = 1.0f;
-    }
-    else if(g <= 0.0f) {
-        g = 0.0f;
-    }
-
-    if(b >= 1.0f) {
-        b = 1.0f;
-    }
-    else if(b <= 0.0f) {
-        b = 0.0f;
-    }
-
-    rgb.push_back(r);
-    rgb.push_back(g);
-    rgb.push_back(b);
-
-    return rgb;
 }
 
 // main
@@ -136,8 +95,10 @@ int main() {
     }
 
     // load shader files
-    const char* vertexShaderSource = readFile(shaderPaths[0]).c_str();
-    const char* fragmentShaderSource = readFile(shaderPaths[1]).c_str();
+    std::string vertexStringSource = readFile(shaderPaths[0]);
+    std::string fragmentStringSource = readFile(shaderPaths[1]);
+    const char* vertexShaderSource = vertexStringSource.c_str();
+    const char* fragmentShaderSource = fragmentStringSource.c_str();
 
     // create shaders
     unsigned int vertexShader;
@@ -192,10 +153,32 @@ int main() {
         std::cerr << "ERROR::SHADERPROGRAM::LINKING_FAILED\n" << linkInfoLog << std::endl;
     }
 
-    // run the program, then kill shaders
+    // kill shaders after linking
+    //glDeleteShader(vertexShader);
+    //glDeleteShader(fragmentShader);
+
+    // create and bind a vertex array object
+    unsigned int VAO;
+    glGenVertexArrays(1, &VAO);
+
+    glBindVertexArray(VAO);
+
+    // generate a buffer for vertex data
+    unsigned int VBO;
+
+    glGenBuffers(1, &VBO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // set the vertex attributes
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    // enable vertex attribute arrays
+    glEnableVertexAttribArray(0);
+
+    // use shader program
     glUseProgram(shaderProgram);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
 
     // render a viewport
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -206,13 +189,14 @@ int main() {
         processInput(window);
 
         // rendering
-        /*std::vector<float> rgb = cycleColors(r, g, b);
-        r = rgb[0];
-        g = rgb[1];
-        b = rgb[2];*/
-
+        // colors
         glClearColor(r, g, b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        // triangle
+        glUseProgram(shaderProgram);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // update graphics
         glfwSwapBuffers(window);

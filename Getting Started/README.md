@@ -133,4 +133,36 @@ Then we use `glGetShaderInfoLog()` passing in our shader, the size of a char arr
 Works the same way as vertex shaders, with some different `.GLSL` code. Specifically utilizing the `out` keyword to output a variable in `vec4`.
 
 ### Shader Programs
-A shader program object is used to combine all our shaders, we can then activate that and issue render calls to it. we call the `glCreateProgram()` function. Then we can use the `glAttachShader()` function, passing in our program and our shader (one at a time). Then we use `glLinkProgram()` passing in our program. To use the program, we call `glUseProgram()` passing in our program, then delete the shader objects with `glDeleteShader()` passing in each shader one at a time.
+A shader program object is used to combine all our shaders, we can then activate that and issue render calls to it. we call the `glCreateProgram()` function. Then we can use the `glAttachShader()` function, passing in our program and our shader (one at a time). Then we use `glLinkProgram()` passing in our program. To use the program, we call `glUseProgram()` passing in our program, then delete the shader objects with `glDeleteShader()` passing in each shader one at a time. Testing can be done with the same process as shader compilation.
+
+## Linking Vertex Attributes
+A vertex shader takes in vertex attributes, but we need to specify where the attributes go and how OpenGL interprets it. Each position is stored as a 32-bit value, with each coordinate stored as 12-bits. These are tightly packed into a buffer array, meaning there is no space between values.
+![Vertex Attributes](./assets/README/vertex_attribute_pointer.png)
+
+We can tell OpenGL how to process data with `glVertexAttribPointer()`, there are quite a few arguments:
+- `index`: the "layout location" attribute of your vector shader, for example we have `layout(location = 0)` for `aPos` (`location = 1` for color, `location = 2` for texture position, etc.)
+- `size`: the amount of components per vertex (a vertex in 3-space has 3 components)
+- `type`: the format your data is in (i.e. `float`)
+- `normalized`: if your vector data is in int-based coordinates, normalize to floats from `-1.0f` to `1.0f` (`GL_FALSE` for our usecase)
+- `stride`: the space *between* consecutive float attributes, each set of positions are 3 floats away from eachother, so you can call `3*sizeof(float)`
+- `pointer`: the offset to the first datapoint, this is cast to a void pointer. For our current usecase, we use `0`, however if you are storing color data in the same array as vertex data, then you set your `stride` to `6*sizeof(float)` and the offset of your color `glVertexAttribPointer()` to `3*sizeof(float)`
+
+## Vertex Array Objects
+A vertex array object (VAO) consists of all vertexes that get bound to a VBO. Which means whenever we want to draw an object, we call the corrosponding VAO instead of having to point to each coordinate.
+
+![Vertex Array Object](./assets/README/vertex_array_objects.png)
+
+To generate a vertex array, we call `glGenVertexArrays()` passing in the amount of arrays, and a pointer to the array variable:
+- `n`: the amount of VAOs to generate
+- `arrays`: the array to point at that stores each VAO (a single unsigned integer for now)
+
+They are then bound with `glBindVertexArray()` passing in one array at a time.
+
+## Drawing Vertices
+You can draw your VAO using the function `glDrawArrays()` passing in the following arguments:
+- `mode`: the mode to draw your arrays in (`GL_TRIANGLES` for this build)
+- `first`: specifies the starting index of your array (`0` for this build, since our triangle starts at the first vertex)
+- `count`: the amount of vertices to draw (`3` since its a triangle)
+
+## Element Buffer Objects
+EBOs can be used to combine multiple objects into one object that shares vertices, like how a rectangle made of two triangles consists of 6 vertices, but only 4 of them are distinct. We create a new unsigned integer array for our indices, generate and bind it the same way as a VAO or VBO, except we use `GL_ELEMENT_ARRAY_BUFFER`. I haven't included code for that here to keep it simpler.
